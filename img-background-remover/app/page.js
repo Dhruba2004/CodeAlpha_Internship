@@ -8,7 +8,7 @@ export default function Page() {
   console.log(image);
 
   const handleChangeBG = () => {
-    const apiKey = "WawNToGfqmr3kkhWirWFwxj6";
+    const apiKey = "WcvUZ14VC5hdwmViraaTVCAX";
     const url = "https://api.remove.bg/v1.0/removebg";
     const formData = new FormData();
     formData.append("image_file", image, image.name);

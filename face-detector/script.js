@@ -1,4 +1,5 @@
 let video = document.getElementById("video");
+
 let model;
 
 // declare the canvas variable and setting up the context
