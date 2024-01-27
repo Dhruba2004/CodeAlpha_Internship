@@ -1,36 +1,54 @@
-const video = document.getElementById("video");
-video.style.transform = 'scaleX(-1)';
+let video = document.getElementById("video");
+let model;
 
+// declare the canvas variable and setting up the context
 
-Promise.all([
-  faceapi.nets.tinyFaceDetector.loadFromUri("/models"),
-  faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
-  faceapi.nets.faceRecognitionNet.loadFromUri("/models"),
-  faceapi.nets.faceExpressionNet.loadFromUri("/models"),
-]).then(startVideo);
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
 
-function startVideo() {
-  navigator.getUserMedia(
-    { video: {} },
-    (stream) => (video.srcObject = stream),
-    (err) => console.error(err)
-  );
-}
+const accessCamera = () => {
+  navigator.mediaDevices
+    .getUserMedia({
+      video: { width: 600, height: 400 },
+      audio: false,
+    })
+    .then((stream) => {
+      video.srcObject = stream;
+    });
+};
 
-video.addEventListener("play", () => {
-  const canvas = faceapi.createCanvasFromMedia(video);
-  document.body.append(canvas);
-  const displaySize = { width: video.width, height: video.height };
-  faceapi.matchDimensions(canvas, displaySize);
-  setInterval(async () => {
-    const detections = await faceapi
-      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-      .withFaceLandmarks()
-      .withFaceExpressions();
-    const resizedDetections = faceapi.resizeResults(detections, displaySize);
-    canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
-    faceapi.draw.drawDetections(canvas, resizedDetections);
-    faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
-    faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
-  }, 100);
+const detectFaces = async () => {
+  const prediction = await model.estimateFaces(video, false);
+
+  // Using canvas to draw the video first
+
+  ctx.drawImage(video, 0, 0, 600, 400);
+
+  prediction.forEach((predictions) => {
+    // Drawing rectangle that'll detect the face
+    ctx.beginPath();
+    ctx.lineWidth = "4";
+    ctx.strokeStyle = "blue";
+    ctx.rect(
+      predictions.topLeft[0],
+      predictions.topLeft[1],
+      predictions.bottomRight[0] - predictions.topLeft[0],
+      predictions.bottomRight[1] - predictions.topLeft[1]
+    );
+    // The last two arguments denotes the width and height
+    // but since the blazeface models only returns the coordinates
+    // so we have to subtract them in order to get the width and height
+    ctx.stroke();
+    ctx.fillStyle = "red";
+    predictions.landmarks.forEach((landmark)=>{
+      ctx.fillRect(landmark[0],landmark[1],5,5);
+    })
+  });
+};
+
+accessCamera();
+video.addEventListener("loadeddata", async () => {
+  model = await blazeface.load();
+  // Calling the detectFaces every 40 millisecond
+  setInterval(detectFaces, 40);
 });
